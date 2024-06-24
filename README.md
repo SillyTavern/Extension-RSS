@@ -2,6 +2,8 @@
 
 Adds a slash command that returns the latest news from RSS feeds.
 
+Includes a copy of the [rss-parser](https://github.com/rbren/rss-parser) library (MIT license).
+
 ## Installation
 
 Install using the SillyTavern extension installer
@@ -12,7 +14,7 @@ https://github.com/Cohee1207/Extension-RSS
 
 ## Usage
 
-1. Requires a CORS proxy to function! Either set enableCorsProxy to true in `config.yaml` and leave the UI field empty, or use a CORS proxy like `https://cors-anywhere.herokuapp.com/` in the "CORS Proxy" field in the extension settings.
+1. Requires a CORS proxy to function! Either set enableCorsProxy to true in `config.yaml` and leave the UI field empty or use a CORS proxy like `https://cors-anywhere.herokuapp.com/` in the "CORS Proxy" field in the extension settings.
 2. Add RSS feeds in the extension settings, one per line.
 3. Use the `/news` command to get the latest news from the feeds.
 
