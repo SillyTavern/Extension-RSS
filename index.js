@@ -1,11 +1,15 @@
 import { extension_settings } from '../../../extensions.js';
-import { isTrueBoolean, isFalseBoolean } from '../../../utils.js';
+import { isTrueBoolean, isFalseBoolean, loadFileToDocument } from '../../../utils.js';
 import { saveSettingsDebounced } from '../../../../script.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
-import { SlashCommandClosure } from '../../../slash-commands/SlashCommandClosure.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
-import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
+
+await loadFileToDocument('scripts/extensions/third-party/Extension-RSS/rss-parser.min.js', 'js');
+
+if (!('RSSParser' in window)) {
+    throw new Error('RSSParser not found.');
+}
 
 const defaultSettings = {
     corsProxy: 'https://cors-anywhere.herokuapp.com/',
@@ -13,10 +17,55 @@ const defaultSettings = {
 };
 
 async function getNewsCallback(args, value) {
-    return '';
+    if (extension_settings.rss.rssFeeds.length === 0) {
+        toastr.warning('No RSS feeds configured.');
+        return '';
+    }
+
+    const parser = new RSSParser();
+    const feeds = extension_settings.rss.rssFeeds.map(feed => getCorsProxy() + feed);
+    const promises = feeds.map(feed => parser.parseURL(feed));
+    const parsedFeeds = (await Promise.allSettled(promises)).filter(x => x.status === 'fulfilled').map(x => x.value);
+
+    const count = Number(args.count || 5);
+    const news = parsedFeeds.flatMap(feed => feed.items).sort((a, b) => new Date(b.isoDate || b.pubDate) - new Date(a.isoDate || a.pubDate)).slice(0, count);
+
+    const title = !isFalseBoolean(args.title);
+    const snippet = !isFalseBoolean(args.snippet);
+    const link = isTrueBoolean(args.link);
+    const date = isTrueBoolean(args.date);
+
+    const result = news.map(item => {
+        let str = '';
+        if (title) {
+            str += `**${item.title}**\n`;
+        }
+        if (snippet) {
+            str += `${item.contentSnippet}\n`;
+        }
+        if (link) {
+            str += `${item.link}\n`;
+        }
+        if (date) {
+            str += `${new Date(item.isoDate || item.pubDate).toLocaleString()}\n`;
+        }
+        return str;
+    }).join('\n').trim();
+
+    return result;
 }
 
-jQuery(() => {
+function getCorsProxy() {
+    const addSlash = (url) => url.endsWith('/') ? url : url + '/';
+
+    if (extension_settings.rss.corsProxy) {
+        return addSlash(extension_settings.rss.corsProxy);
+    }
+
+    return addSlash(window.location.origin + '/proxy');
+}
+
+jQuery(async () => {
     if (extension_settings.rss === undefined) {
         extension_settings.rss = defaultSettings;
     }
@@ -37,8 +86,8 @@ jQuery(() => {
             <div class="inline-drawer-content">
                 <div>
                     <label for="rss_cors_proxy">CORS Proxy URL</label>
-                    <small>To use a built-in proxy, enable it in <code>config.yaml</code> and leave this field empty.</small>
-                    <input id="rss_cors_proxy" class="text_pole" type="text" />
+                    <div><small>To use a built-in proxy, enable it in <code>config.yaml</code> and leave this field empty.</small></div>
+                    <input id="rss_cors_proxy" class="text_pole" type="text" placeholder="${window.location.origin}/proxy" />
                 </div>
                 <div>
                     <label for="rss_feeds">RSS Feeds (one per line)</label>
@@ -62,15 +111,7 @@ jQuery(() => {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'news',
         helpString: 'Get the latest news from RSS feeds.',
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'filter news items by category',
-                isRequired: false,
-                acceptsMultiple: false,
-                defaultValue: '',
-                typeList: [ARGUMENT_TYPE.STRING],
-            }),
-        ],
+        unnamedArgumentList: [],
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'count',
@@ -79,6 +120,38 @@ jQuery(() => {
                 isRequired: false,
                 acceptsMultiple: false,
                 defaultValue: 5,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'title',
+                description: 'include title of the news item',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                isRequired: false,
+                acceptsMultiple: false,
+                defaultValue: true,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'snippet',
+                description: 'include snippet of the news item',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                isRequired: false,
+                acceptsMultiple: false,
+                defaultValue: true,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'link',
+                description: 'include link to the news item',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                isRequired: false,
+                acceptsMultiple: false,
+                defaultValue: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'date',
+                description: 'include date of the news item',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                isRequired: false,
+                acceptsMultiple: false,
+                defaultValue: false,
             }),
         ],
         callback: getNewsCallback,
