@@ -3,6 +3,7 @@ import { isTrueBoolean, isFalseBoolean, loadFileToDocument } from '../../../util
 import { saveSettingsDebounced } from '../../../../script.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandEnumValue } from '../../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 
 await loadFileToDocument('scripts/extensions/third-party/Extension-RSS/rss-parser.min.js', 'js');
@@ -17,13 +18,21 @@ const defaultSettings = {
 };
 
 async function getNewsCallback(args, value) {
-    if (extension_settings.rss.rssFeeds.length === 0) {
+    const urls = [];
+
+    if (value.trim()) {
+        urls.push(...value.split(' ').map(x => x.trim()).filter(x => x));
+    } else {
+        urls.push(...extension_settings.rss.rssFeeds);
+    }
+
+    if (urls.length === 0) {
         toastr.warning('No RSS feeds configured.');
         return '';
     }
 
     const parser = new RSSParser();
-    const feeds = extension_settings.rss.rssFeeds.map(feed => getCorsProxy() + feed);
+    const feeds = urls.map(feed => getCorsProxy() + feed);
     const promises = feeds.map(feed => parser.parseURL(feed));
     const parsedFeeds = (await Promise.allSettled(promises)).filter(x => x.status === 'fulfilled').map(x => x.value);
 
@@ -110,8 +119,18 @@ jQuery(async () => {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'news',
+        aliases: ['rss'],
         helpString: 'Get the latest news from RSS feeds.',
-        unnamedArgumentList: [],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'feeds to get news from',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                acceptsMultiple: true,
+                defaultValue: '',
+                enumProvider: () => extension_settings.rss.rssFeeds.map(feed => new SlashCommandEnumValue(feed)),
+            }),
+        ],
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'count',
