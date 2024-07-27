@@ -8,12 +8,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Cohee1207/Extension-RSS.git"
+    "url": "git+https://github.com/SillyTavern/Extension-RSS.git"
   },
   "author": "Cohee1207",
   "license": "AGPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/Cohee1207/Extension-RSS/issues"
+    "url": "https://github.com/SillyTavern/Extension-RSS/issues"
   },
-  "homepage": "https://github.com/Cohee1207/Extension-RSS#readme"
+  "homepage": "https://github.com/SillyTavern/Extension-RSS#readme"
 }
