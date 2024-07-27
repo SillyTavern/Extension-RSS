@@ -9,7 +9,7 @@ Includes a copy of the [rss-parser](https://github.com/rbren/rss-parser) library
 Install using the SillyTavern extension installer
 
 ```txt
-https://github.com/Cohee1207/Extension-RSS
+https://github.com/SillyTavern/Extension-RSS
 ```
 
 ## Usage
