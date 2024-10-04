@@ -74,6 +74,61 @@ function getCorsProxy() {
     return addSlash(window.location.origin + '/proxy');
 }
 
+function registerFunctionTools() {
+    try {
+        const { registerFunctionTool } = SillyTavern.getContext();
+
+        if (!registerFunctionTool) {
+            console.debug('[RSS] Tool calling is not supported.');
+            return;
+        }
+
+        const getNewsSchema = Object.freeze({
+            $schema: 'http://json-schema.org/draft-04/schema#',
+            type: 'object',
+            properties: {
+                count: {
+                    type: 'number',
+                    description: 'Number of news items to return.',
+                },
+                feeds: {
+                    type: 'array',
+                    description: 'RSS feeds to get news from. Get news from all configured feeds if not provided.',
+                    items: {
+                        type: 'string',
+                    },
+                },
+            },
+            required: [
+                'count',
+            ],
+        });
+
+        registerFunctionTool({
+            name: 'GetNews',
+            displayName: 'Get News',
+            description: 'Get the latest news headlines. Call when the user asks for news, what is happening in the world, etc.',
+            parameters: getNewsSchema,
+            action: async (args) => {
+                const urls = Array.isArray(args?.feeds) ? args.feeds : extension_settings.rss.rssFeeds;
+                if (urls.length === 0) throw new Error('No RSS feeds provided.');
+                const parser = new RSSParser();
+                const feeds = urls.map(feed => getCorsProxy() + feed);
+                const promises = feeds.map(feed => parser.parseURL(feed));
+                const parsedFeeds = (await Promise.allSettled(promises)).filter(x => x.status === 'fulfilled').map(x => x.value);
+                if (!parsedFeeds.length) throw new Error('Failed to fetch RSS feeds.');
+                const count = Number(args?.count || 5);
+                const news = parsedFeeds.flatMap(feed => feed.items).sort((a, b) => new Date(b.isoDate || b.pubDate) - new Date(a.isoDate || a.pubDate)).slice(0, count);
+                const result = news.map(item => [item.title, item.contentSnippet, item.link, new Date(item.isoDate || item.pubDate).toLocaleString()].join('\n')).join('\n\n').trim();
+                return result;
+            },
+            formatMessage: () => `Getting the latest news...`,
+        });
+    } catch (err) {
+        console.error('RSS function tools failed to register:', err);
+    }
+}
+
 jQuery(async () => {
     if (extension_settings.rss === undefined) {
         extension_settings.rss = defaultSettings;
@@ -176,4 +231,6 @@ jQuery(async () => {
         callback: getNewsCallback,
         returns: 'a string containing the latest news items',
     }));
+
+    registerFunctionTools();
 });
