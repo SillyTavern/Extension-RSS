@@ -1,5 +1,5 @@
 import { extension_settings } from '../../../extensions.js';
-import { isTrueBoolean, isFalseBoolean, loadFileToDocument } from '../../../utils.js';
+import { isTrueBoolean, isFalseBoolean, loadFileToDocument, isValidUrl } from '../../../utils.js';
 import { saveSettingsDebounced } from '../../../../script.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
@@ -110,14 +110,16 @@ function registerFunctionTools() {
             description: 'Get the latest news headlines. Call when the user asks for news, what is happening in the world, etc.',
             parameters: getNewsSchema,
             action: async (args) => {
-                const urls = Array.isArray(args?.feeds) ? args.feeds : extension_settings.rss.rssFeeds;
+                if (!args) args = { feeds: [], count: 5 };
+                if (Array.isArray(args.feeds)) args.feeds = args.feeds.filter(isValidUrl);
+                const urls = Array.isArray(args.feeds) && args.feeds.length ? args.feeds : extension_settings.rss.rssFeeds;
                 if (urls.length === 0) throw new Error('No RSS feeds provided.');
                 const parser = new RSSParser();
                 const feeds = urls.map(feed => getCorsProxy() + feed);
                 const promises = feeds.map(feed => parser.parseURL(feed));
                 const parsedFeeds = (await Promise.allSettled(promises)).filter(x => x.status === 'fulfilled').map(x => x.value);
                 if (!parsedFeeds.length) throw new Error('Failed to fetch RSS feeds.');
-                const count = Number(args?.count || 5);
+                const count = Number(args.count || 5);
                 const news = parsedFeeds.flatMap(feed => feed.items).sort((a, b) => new Date(b.isoDate || b.pubDate) - new Date(a.isoDate || a.pubDate)).slice(0, count);
                 const result = news.map(item => [item.title, item.contentSnippet, item.link, new Date(item.isoDate || item.pubDate).toLocaleString()].join('\n')).join('\n\n').trim();
                 return result;
