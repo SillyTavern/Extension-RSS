@@ -29,6 +29,14 @@ https://github.com/SillyTavern/Extension-RSS
 - `link` - Include the link to the news item. The default is false.
 - `date` - Include the date of the news item. The default is false.
 
+### Via the function tool
+
+The function tool needs to be enabled in the extension settings first and used with a compatible backend.
+
+If all requirements are met, just ask the model about the latest news from the feeds.
+
+Docs: [Function Calling](https://docs.sillytavern.app/for-contributors/function-calling/)
+
 ## Example
 
 ```txt

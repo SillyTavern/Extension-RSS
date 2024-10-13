@@ -76,10 +76,15 @@ function getCorsProxy() {
 
 function registerFunctionTools() {
     try {
-        const { registerFunctionTool } = SillyTavern.getContext();
+        const { registerFunctionTool, unregisterFunctionTool } = SillyTavern.getContext();
 
         if (!registerFunctionTool) {
             console.debug('[RSS] Tool calling is not supported.');
+            return;
+        }
+
+        if (!extension_settings.rss.functionTool) {
+            unregisterFunctionTool('GetNews');
             return;
         }
 
@@ -159,6 +164,15 @@ jQuery(async () => {
                     <label for="rss_feeds">RSS Feeds (one per line)</label>
                     <textarea id="rss_feeds" class="text_pole" rows="4"></textarea>
                 </div>
+                <div>
+                    <label class="checkbox_label for="rss_function_tool">
+                        <input id="rss_function_tool" type="checkbox" />
+                        <span>Use function tool</span>
+                        <a rel="noopener" href="https://docs.sillytavern.app/for-contributors/function-calling/" class="notes-link" target="_blank">
+                            <span class="note-link-span">?</span>
+                        </a>
+                    </label>
+                </div>
             </div>
         </div>
     </div>`;
@@ -172,6 +186,12 @@ jQuery(async () => {
     $('#rss_feeds').val(extension_settings.rss.rssFeeds.join('\n')).on('input', function () {
         extension_settings.rss.rssFeeds = String($(this).val()).split('\n').map(x => x.trim()).filter(x => x);
         saveSettingsDebounced();
+    });
+
+    $('#rss_function_tool').prop('checked', extension_settings.rss.functionTool).on('change', function () {
+        extension_settings.rss.functionTool = !!$(this).prop('checked');
+        saveSettingsDebounced();
+        registerFunctionTools();
     });
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
