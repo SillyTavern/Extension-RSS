@@ -16,9 +16,18 @@ https://github.com/SillyTavern/Extension-RSS
 
 1. Requires a CORS proxy to function! Either set enableCorsProxy to true in `config.yaml` and leave the UI field empty or use a CORS proxy like `https://cors-anywhere.herokuapp.com/` in the "CORS Proxy" field in the extension settings.
 2. Add RSS feeds in the extension settings, one per line.
-3. Use the `/news` command to get the latest news from the feeds.
 
-## Arguments
+### Via the function tool
+
+The function tool needs to be enabled in the extension settings first and used with a compatible backend.
+
+If all requirements are met, just ask the model about the latest news from the feeds.
+
+Docs: [Function Calling](https://docs.sillytavern.app/for-contributors/function-calling/)
+
+### Via the slash command
+
+Use the `/news` command to get the latest news from the feeds.
 
 `/news <feeds>` - Get the latest news from the feeds. Alias: `/rss`
 
@@ -28,14 +37,6 @@ https://github.com/SillyTavern/Extension-RSS
 - `snippet` - Include a snippet of the news item. The default is true.
 - `link` - Include the link to the news item. The default is false.
 - `date` - Include the date of the news item. The default is false.
-
-### Via the function tool
-
-The function tool needs to be enabled in the extension settings first and used with a compatible backend.
-
-If all requirements are met, just ask the model about the latest news from the feeds.
-
-Docs: [Function Calling](https://docs.sillytavern.app/for-contributors/function-calling/)
 
 ## Example
 
