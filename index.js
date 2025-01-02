@@ -176,7 +176,8 @@ jQuery(async () => {
             </div>
         </div>
     </div>`;
-    $('#extensions_settings').append(html);
+    const extensionContainer = document.getElementById('rss_container') ?? document.getElementById('extensions_settings');
+    $(extensionContainer).append(html);
 
     $('#rss_cors_proxy').val(extension_settings.rss.corsProxy).on('input', function () {
         extension_settings.rss.corsProxy = String($(this).val());
